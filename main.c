@@ -62,13 +62,18 @@ int read_dict(char ***dict) {
     dictionary = (char **) malloc(sizeof(char *));
     while(fgets(buf, 17, fp) != NULL) {
         //append spaces if needed, then append to dict
-        printf("read %lu bytes: \"%s\"\r", strlen(buf), buf);
+//        printf("read %lu bytes: \"%s\"\r", strlen(buf), buf);
         tmp = malloc(sizeof(char)* 17);
         strcpy(tmp, buf);
         memset(tmp + strlen(buf), ' ', 16-strlen(buf)); //pad with spaces
-        memset(tmp + 16, '\0', 1); //null terminator
+        tmp[16] = '\0'; //null terminator
+
         dictionary = realloc(dictionary, (size_t) (dict_length + 1));
         dictionary[dict_length] = tmp;
+
+        printf("strlen(plaintext): %d", strlen(dictionary[dict_length]));
+        printf("added \"%s\"\r", dictionary[dict_length]);
+
         dict_length += 1;
     }
     dictionary = realloc(dictionary, (size_t) (dict_length + 1));
@@ -84,7 +89,7 @@ int main() {
     unsigned char plaintext[] = "This is a top secret.";
     char cipher_hex[] = "8d20e5056a8d24d0462ce74e4904c1b5"
                         "13e10d1df4a2ef2ad4540fae1ca0aaf9";
-    char *test_cipher = NULL;
+    char test_cipher[1024];
     char ** dict;
     char *key;
     int i = 0;
@@ -106,11 +111,14 @@ int main() {
 
     EVP_CipherInit_ex(context, NULL, NULL, key, iv, 1);
 
+    printf("strlen(plaintext): %s\n", test_cipher);
+
     while(strcmp(ref_cipher, test_cipher) != 0) {
         key = dict[i];
-        EVP_CipherInit_ex(context, NULL, NULL, key, NULL, 1);
-
-        EVP_CipherUpdate(context, test_cipher, strlen(plaintext), plaintext, strlen(plaintext));
+        EVP_CipherInit_ex(context, NULL, NULL, key, iv, 1);
+        printf("trying \"%s\", %d\r", dict[i], strlen(plaintext));
+//        printf("strlen(plaintext): %d\n", strlen(plaintext));
+        EVP_EncryptUpdate(context, test_cipher, (int) strlen(plaintext), plaintext, (int) strlen(plaintext));
 
     }
     printf("key: %s\n", dict[i]);
