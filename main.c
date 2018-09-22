@@ -62,16 +62,17 @@ int read_dict(char ***dict) {
     dictionary = (char **) malloc(sizeof(char *));
     while(fgets(buf, 17, fp) != NULL) {
         //append spaces if needed, then append to dict
-//        printf("read %lu bytes: \"%s\"\r", strlen(buf), buf);
+        buf[strlen(buf) - 1] = '\0';
+        printf("read %lu bytes: \"%s\"\r", strlen(buf), buf);
         tmp = malloc(sizeof(char)* 17);
         strcpy(tmp, buf);
-        memset(tmp + strlen(buf), ' ', 16-strlen(buf)); //pad with spaces
+        memset(tmp + strlen(buf), ' ', 16-strlen(buf) - 1); //pad with spaces
         tmp[16] = '\0'; //null terminator
 
         dictionary = realloc(dictionary, (size_t) (dict_length + 1));
         dictionary[dict_length] = tmp;
 
-        printf("strlen(plaintext): %d", strlen(dictionary[dict_length]));
+//        printf("strlen(plaintext): %d", strlen(dictionary[dict_length]));
         printf("added \"%s\"\r", dictionary[dict_length]);
 
         dict_length += 1;
@@ -109,16 +110,23 @@ int main() {
     OPENSSL_assert(EVP_CIPHER_CTX_key_length(context) == 16);
     OPENSSL_assert(EVP_CIPHER_CTX_iv_length(context) == 16);
 
-    EVP_CipherInit_ex(context, NULL, NULL, key, iv, 1);
+    if(!EVP_CipherInit_ex(context, NULL, NULL, key, iv, 1)){
+        printf("something went wrong");
+        return 2;
+    }
 
-    printf("strlen(plaintext): %s\n", test_cipher);
+    printf("test_cipher): %s\n", test_cipher);
 
     while(strcmp(ref_cipher, test_cipher) != 0) {
         key = dict[i];
-        EVP_CipherInit_ex(context, NULL, NULL, key, iv, 1);
-        printf("trying \"%s\", %d\r", dict[i], strlen(plaintext));
+        printf("trying \"%s\"\r", dict[i]);
+        if(!EVP_CipherInit_ex(context, NULL, NULL, key, iv, 1)){
+            printf("something went wrong");
+            return 2;
+        }
+
 //        printf("strlen(plaintext): %d\n", strlen(plaintext));
-        EVP_EncryptUpdate(context, test_cipher, (int) strlen(plaintext), plaintext, (int) strlen(plaintext));
+        EVP_CipherUpdate(context, (char *) test_cipher, (int) strlen(plaintext), plaintext, (int) strlen(plaintext));
 
     }
     printf("key: %s\n", dict[i]);
